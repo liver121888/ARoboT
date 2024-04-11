@@ -1,9 +1,11 @@
 import numpy as np
 import heapq
+import time
 class blockPlanning:
     def __init__(self, initState:np.array, goalState:np.array, topPadding:int):
         self.initPose = np.concatenate((initState, np.zeros((topPadding, initState.shape[1]))), axis=0)
         self.goalPose = np.concatenate((goalState, np.zeros((topPadding, goalState.shape[1]))), axis=0)
+        self.topPadding = topPadding    
         self.rows = len(initState)+topPadding
         self.cols = len(initState[0])
         colors_init = np.unique(initState)
@@ -44,6 +46,7 @@ class blockPlanning:
     def getSuccessors(self, state:np.array):
         successors = []
         topIndexes = self.findTopIndex(state)
+        # print("State: ", state)
         # for the top indexes, we can directly add blocks
         for (col,row) in topIndexes:
             if row < self.rows - 1: # not adding to the top row
@@ -52,6 +55,7 @@ class blockPlanning:
                     newState[row][col] = color
                     if self.isPhysicallyLegal(newState):
                         successors.append(newState)
+        # print("Successors after add: ", len(successors))
         # for one row below the top indexes, we can move blocks to table (eliminate)
         for (col,row) in topIndexes:
             if row > 0:
@@ -59,6 +63,7 @@ class blockPlanning:
                 newState[row-1][col] = 0
                 if self.isPhysicallyLegal(newState):
                     successors.append(newState)
+        # print("Successors after eliminate: ", len(successors))
         # for one row below top indexes, we can move to other top indexes
         for (col,row) in topIndexes:
             if row > 0:
@@ -70,6 +75,7 @@ class blockPlanning:
                     newState[row-1][col] = 0
                     if self.isPhysicallyLegal(newState):
                         successors.append(newState)
+        # print("Successors after move: ", len(successors))
         return successors
     
     def CheckVisited(self,state,vertices):
@@ -124,17 +130,34 @@ class blockPlanning:
         return np.array_equal(state, self.goalPose)
     
     def heuristic(self, state:np.array):
-        score = np.sum(state != self.goalPose)
+        score = 0
+        # score = np.sum(state != self.goalPose)
+        diff = self.goalPose - state
+        for col in range(self.cols):
+            for row in range(self.rows):
+                if state[row][col] == 0:
+                    score += 1
+                elif diff[row][col] != 0:
+                    score += self.rows - row -self.topPadding
+                    break
         return score
 
 if __name__ == '__main__':
     initState = np.array([[1, 2, 1, 1], [1, 2, 1, 2], [2, 2, 2, 1], [2, 1, 2, 1]])
-    goalState = np.array([[1, 2, 1, 2], [2, 1, 2, 2], [1, 2, 1, 2], [2, 1, 2, 1]])
+    # initState = np.zeros((4,4))
+    goalState = np.array([[1, 2, 1, 2], [1, 2, 2, 1], [1, 2, 1, 2], [2, 1, 2, 1]])
 
     # initState = np.array([[1, 2, 1], [1, 2, 1], [2, 2, 2]])
     # goalState = np.array([[1, 2, 1], [2, 1, 2], [1, 2, 1]])
+    
     # testState = np.array([[1, 1, 1], [0, 1, 1], [0, 1, 1], [0, 0, 0], [0, 0, 0]])
-    bp = blockPlanning(initState, goalState,2)
+    bp = blockPlanning(initState, goalState,1)
+    # print(bp.heuristic(testState))
     # print(bp.isPhysicallyLegal(testState))
 
+    start_time = time.time()
     bp.AstarSearch()
+    end_time = time.time()
+
+    execution_time = end_time - start_time
+    print(f"Execution time: {execution_time} seconds")
