@@ -12,6 +12,19 @@ class blockPlanning:
         colors_goal = np.unique(goalState)
         self.colors = colors_goal if colors_goal.size > colors_init.size else colors_init
         self.colors = self.colors[self.colors != 0]
+        self.removalMasks = [[np.zeros((self.rows, self.cols),dtype=bool) for _ in range(self.cols)] for _ in range(self.rows)]
+        for r in range(self.rows-1):
+            for c in range(self.cols):
+                curRemovalMask = np.ones((self.rows, self.cols),dtype=bool)
+                for cc in range(c):
+                    curRemovalMask[0:r+c-cc+1,cc] = 0
+                curRemovalMask[0:r+1,c] = 0
+                for cc in range(c+1, self.cols):
+                    curRemovalMask[0:r+cc-c+1,cc] = 0
+                self.removalMasks[r][c] = curRemovalMask   
+        #         print(curRemovalMask) 
+        # print(self.removalMasks)  
+
 
     def isNoGap(self, state:np.matrix):
         for i in range(self.cols):
@@ -131,16 +144,31 @@ class blockPlanning:
     
     def heuristic(self, state:np.array):
         score = 0
+
         # score = np.sum(state != self.goalPose)
-        diff = self.goalPose - state
-        for col in range(self.cols):
-            for row in range(self.rows):
-                if state[row][col] == 0:
-                    score += 1
-                elif diff[row][col] != 0:
-                    score += self.rows - row -self.topPadding
-                    break
-        return score
+
+        # diff = self.goalPose - state
+        # for col in range(self.cols):
+        #     for row in range(self.rows):
+        #         if state[row][col] == 0:
+        #             score += 0
+        #         elif diff[row][col] != 0:
+        #             score += self.rows - row -self.topPadding
+        #             break
+
+        diffs = state != self.goalPose
+        scoreMatrix = np.zeros((self.rows, self.cols))
+        zeroCounts = 0
+        for r in range(self.rows):
+            for c in range(self.cols):
+                if diffs[r][c]:
+                    if state[r][c] == 0:
+                        zeroCounts += 1
+                    else:
+                        scoreMatrix += self.removalMasks[r][c]
+        score = len(np.nonzero(scoreMatrix)[0]) * 2 - zeroCounts
+
+        return score 
 
 if __name__ == '__main__':
     initState = np.array([[1, 2, 1, 1], [1, 2, 1, 2], [2, 2, 2, 1], [2, 1, 2, 1]])
