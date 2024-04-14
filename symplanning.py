@@ -6,6 +6,10 @@ class blockPlanning:
         self.topPadding = topPadding
         self.initPose = np.concatenate((initState, np.zeros((topPadding, initState.shape[1]),dtype=int)), axis=0)
         self.goalPose = np.concatenate((goalState, np.zeros((topPadding, goalState.shape[1]),dtype=int)), axis=0)
+    def __init__(self, initState:np.array, goalState:np.array, topPadding=1):
+        self.topPadding = topPadding
+        self.initPose = np.concatenate((initState, np.zeros((topPadding, initState.shape[1]),dtype=int)), axis=0)
+        self.goalPose = np.concatenate((goalState, np.zeros((topPadding, goalState.shape[1]),dtype=int)), axis=0)
         self.topPadding = topPadding    
         self.rows = len(initState)+topPadding
         self.cols = len(initState[0])
