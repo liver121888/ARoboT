@@ -75,9 +75,11 @@ class main_node():
             if blocks:
                 resp2 = self.call_exec_services(blocks[0].pose, 1)
                 if resp2:
-                    resp3 = self.call_exec_services(end, 2)
+                    resp3 = self.call_exec_services(reset_pose, 0)
                     if resp3:
-                        return True
+                        resp4 = self.call_exec_services(end, 2)
+                        if resp4:
+                            return True
         return False
     
     def take(self, color, start):
@@ -86,17 +88,21 @@ class main_node():
         place_pose = color_dict[color]
         resp = self.call_exec_services(start, 1)
         if resp:
-            resp2 = self.call_exec_services(place_pose, 2)
+            resp2 = self.call_exec_services(reset_pose, 0)
             if resp2:
-                return True
+                resp3 = self.call_exec_services(place_pose, 2)
+                if resp3:
+                    return True
         return False
     
     def transfer(self, start, end):
         resp = self.call_exec_services(start, 1)
         if resp:
-            resp2 = self.call_exec_services(end, 2)
+            resp2 = self.call_exec_services(reset_pose, 0)
             if resp2:
-                return True
+                resp3 = self.call_exec_services(end, 2)
+                if resp3:
+                    return True
         return False
 
     def start(self):
