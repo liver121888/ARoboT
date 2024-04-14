@@ -2,9 +2,10 @@ import numpy as np
 import heapq
 import time
 class blockPlanning:
-    def __init__(self, initState:np.array, goalState:np.array, topPadding:int):
-        self.initPose = np.concatenate((initState, np.zeros((topPadding, initState.shape[1]))), axis=0)
-        self.goalPose = np.concatenate((goalState, np.zeros((topPadding, goalState.shape[1]))), axis=0)
+    def __init__(self, initState:np.array, goalState:np.array, topPadding=1):
+        self.topPadding = topPadding
+        self.initPose = np.concatenate((initState, np.zeros((topPadding, initState.shape[1]),dtype=int)), axis=0)
+        self.goalPose = np.concatenate((goalState, np.zeros((topPadding, goalState.shape[1]),dtype=int)), axis=0)
         self.topPadding = topPadding    
         self.rows = len(initState)+topPadding
         self.cols = len(initState[0])
@@ -24,7 +25,19 @@ class blockPlanning:
                 self.removalMasks[r][c] = curRemovalMask   
         #         print(curRemovalMask) 
         # print(self.removalMasks)  
-
+    
+    def newStartGoal(self, initState:np.array, goalState:np.array):
+        initPose = np.concatenate((initState, np.zeros((self.topPadding, initState.shape[1]),dtype=int)), axis=0)
+        goalPose = np.concatenate((goalState, np.zeros((self.topPadding, goalState.shape[1]),dtype=int)), axis=0)
+        if (self.initPose.shape != initPose.shape or self.goalPose.shape != goalPose.shape):
+            raise ValueError('Incompatible Size for new initPose and goalPose')
+        colors_init = np.unique(initState)
+        colors_goal = np.unique(goalState)
+        self.colors = colors_goal if colors_goal.size > colors_init.size else colors_init
+        self.colors = self.colors[self.colors != 0]
+        self.initPose = initPose
+        self.goalPose = goalPose
+        
 
     def isNoGap(self, state:np.matrix):
         for i in range(self.cols):
@@ -55,7 +68,6 @@ class blockPlanning:
                 return False
         return True
             
-        
     def getSuccessors(self, state:np.array):
         successors = []
         topIndexes = self.findTopIndex(state)
@@ -91,17 +103,12 @@ class blockPlanning:
         # print("Successors after move: ", len(successors))
         return successors
     
-    def CheckVisited(self,state,vertices):
-        for i in range(len(vertices)):
-            if np.array_equal(state,vertices[i]):
-                return True
-        return False
-    
     def AstarSearch(self):
         pq = []
         vertices = []
         parent = []
         cost2come=[]
+        visited = set()
         heapq.heappush(pq, (0, 0)) # (cost, vertex_id)
         vertices.append(self.initPose) # (cost, vertex_id)
         parent.append(0)
@@ -114,14 +121,16 @@ class blockPlanning:
                 FoundPath = True
                 break
             # print("Exploring: ")
-            # print(vertices[id])
             successors = self.getSuccessors(vertices[id])  
             for s in successors:
-                if not self.CheckVisited(s,vertices):
+                # print(s)
+                if not tuple(s.flatten()) in visited:
+                # if not self.CheckVisited(s,vertices):
                     g = cost2come[id]+1
                     h = self.heuristic(s)
                     f = g+h
                     vertices.append(s)
+                    visited.add(tuple(s.flatten()))
                     if (len(vertices))%2000==0:
                         print("Explored: ", len(vertices)-1)
                     parent.append(id)
@@ -134,9 +143,36 @@ class blockPlanning:
             while not x==0:
                 Plan.insert(0,vertices[x])
                 x=parent[x]
-        print("Plan:")
-        for p in Plan:
-            print(p)
+        Plan.insert(0,self.initPose)
+
+        actions = []
+        for i, state in enumerate(Plan[:-1]):
+            nextState = Plan[i+1]
+            diff = nextState - state
+            rows, cols = np.nonzero(diff)
+            if len(rows) == 1:
+                if nextState[rows[0]][cols[0]] > 0: # add
+                    actions.append((nextState[rows[0]][cols[0]], (-1, -1), (rows[0],cols[0])))
+                else: # remove
+                    actions.append((state[rows[0]][cols[0]], (rows[0],cols[0]), (-1, -1)))
+            else:
+                fro = (-1, -1)
+                to = (-1, -1)
+                for row, col in zip(rows,cols):
+                    if diff[row][col] > 0: # moved to this pose
+                        to = (row, col)
+                    else:
+                        fro = (row, col)
+                color = state[fro[0]][fro[1]]
+                actions.append((color, fro, to))
+
+        # print("Plan:")
+        # for p, a in zip(Plan[:-1],actions):
+        #     print(p)
+        #     print(a)
+        # print("Plan Length: ", len(Plan))
+        # print("Vertices Explored: ", len(visited))
+        return Plan, actions
                 
 
     def isGoal(self, state:np.array):
@@ -159,26 +195,32 @@ class blockPlanning:
         diffs = state != self.goalPose
         scoreMatrix = np.zeros((self.rows, self.cols))
         zeroCounts = 0
-        for r in range(self.rows):
-            for c in range(self.cols):
-                if diffs[r][c]:
-                    if state[r][c] == 0:
-                        zeroCounts += 1
-                    else:
-                        scoreMatrix += self.removalMasks[r][c]
+
+        zeros = state == 0
+        rows, cols = np.nonzero(diffs)
+        for r,c in zip(rows,cols):
+            scoreMatrix += self.removalMasks[r][c]
+            if zeros[r][c]:
+                zeroCounts += 1
+
+        # zeroCounts = 0
+        # for r in range(self.rows):
+        #     for c in range(self.cols):
+        #         if diffs[r][c]:
+        #             if state[r][c] == 0:
+        #                 zeroCounts += 1
+        #             else:
+        #                 scoreMatrix += self.removalMasks[r][c]
+
+
+
         score = len(np.nonzero(scoreMatrix)[0]) * 2 - zeroCounts
 
-        return score 
+        return score
 
 if __name__ == '__main__':
-    initState = np.array([[1, 2, 1, 1], [1, 2, 1, 2], [2, 2, 2, 1], [2, 1, 2, 1]])
-    # initState = np.zeros((4,4))
-    goalState = np.array([[1, 2, 1, 2], [1, 2, 2, 1], [1, 2, 1, 2], [2, 1, 2, 1]])
-
-    # initState = np.array([[1, 2, 1], [1, 2, 1], [2, 2, 2]])
-    # goalState = np.array([[1, 2, 1], [2, 1, 2], [1, 2, 1]])
-    
-    # testState = np.array([[1, 1, 1], [0, 1, 1], [0, 1, 1], [0, 0, 0], [0, 0, 0]])
+    initState = np.array([[1, 2, 2, 2, 1, 2], [1, 2, 2, 2, 2, 2], [1, 2, 2, 2, 2, 1], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]],dtype=int)
+    goalState = np.array([[1, 2, 2, 2, 1, 2], [1, 2, 1, 2, 1, 2], [2, 1, 1, 2, 1, 1], [1, 2 ,2, 1, 1, 2], [1, 2 ,2, 1, 1, 2], [1, 2, 1 ,1, 2, 1]],dtype=int)
     bp = blockPlanning(initState, goalState,1)
     # print(bp.heuristic(testState))
     # print(bp.isPhysicallyLegal(testState))
@@ -189,3 +231,8 @@ if __name__ == '__main__':
 
     execution_time = end_time - start_time
     print(f"Execution time: {execution_time} seconds")
+
+    initState = np.array([[1, 2, 2, 2, 1, 2], [1, 2, 2, 2, 2, 2], [1, 2, 2, 2, 2, 1], [1, 1, 1, 1, 1, 1], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]],dtype=int)
+    goalState = np.array([[1, 2, 2, 2, 1, 2], [1, 2, 1, 2, 1, 2], [2, 1, 1, 2, 1, 1], [1, 2 ,2, 1, 1, 2], [1, 2 ,2, 1, 1, 2], [1, 2, 1 ,1, 2, 1]],dtype=int)
+    bp.newStartGoal(initState,goalState)
+    bp.AstarSearch()
