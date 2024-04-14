@@ -175,7 +175,9 @@ class blockPlanning:
         #     print(p)
         #     print(a)
         # print("Plan Length: ", len(Plan))
+        # print("Actions Length: ", len(actions))
         # print("Vertices Explored: ", len(visited))
+        Plan.pop(0)
         return Plan, actions
                 
 
@@ -236,7 +238,7 @@ if __name__ == '__main__':
     execution_time = end_time - start_time
     print(f"Execution time: {execution_time} seconds")
 
-    initState = np.array([[1, 2, 2, 2, 1, 2], [1, 2, 2, 2, 2, 2], [1, 2, 2, 2, 2, 1], [1, 1, 1, 1, 1, 1], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]],dtype=int)
-    goalState = np.array([[1, 2, 2, 2, 1, 2], [1, 2, 1, 2, 1, 2], [2, 1, 1, 2, 1, 1], [1, 2 ,2, 1, 1, 2], [1, 2 ,2, 1, 1, 2], [1, 2, 1 ,1, 2, 1]],dtype=int)
-    bp.newStartGoal(initState,goalState)
-    bp.AstarSearch()
+    # initState = np.array([[1, 2, 2, 2, 1, 2], [1, 2, 2, 2, 2, 2], [1, 2, 2, 2, 2, 1], [1, 1, 1, 1, 1, 1], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]],dtype=int)
+    # goalState = np.array([[1, 2, 2, 2, 1, 2], [1, 2, 1, 2, 1, 2], [2, 1, 1, 2, 1, 1], [1, 2 ,2, 1, 1, 2], [1, 2 ,2, 1, 1, 2], [1, 2, 1 ,1, 2, 1]],dtype=int)
+    # bp.newStartGoal(initState,goalState)
+    # bp.AstarSearch()
