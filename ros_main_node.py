@@ -115,4 +115,4 @@ class main_node():
                 succ = self.transfer(start, end)
             curr_state = self.call_state_services()
             if curr_state != expt_state:
-                plans = self.call_planner_services(curr_state, self.goal_state)
+                self.call_planner_services(curr_state, self.goal_state)
