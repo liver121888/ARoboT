@@ -1,0 +1,1 @@
+bbox_info[] array

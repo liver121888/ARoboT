@@ -1,0 +1,26 @@
+<launch>
+
+    <!-- launch moveit -->
+    <include file="$(find arobot)/launch/moveit.launch"/>
+
+    <!-- launch azure -->
+    <!-- <include file="$(find azure_kinect_ros_driver)/launch/driver.launch"/> -->
+
+    <!-- launch realsense2_camera using the realsense.launch file -->
+    <include file="$(find manipulation)/launch/realsense.launch"/>
+
+
+    <!-- launch azure static tf -->
+    <!-- <node pkg="arobot" type="azure_tf_publisher.py" name="azure_tf_publisher" /> -->
+
+    <!-- launch realsense static tf -->
+    <node pkg="arobot" type="realsense_tf_publisher.py" name="realsense_tf_publisher" />
+    
+    <!-- launch realsense aruco marker detection -->
+    <!-- <include file="$(find arobot)/launch/realsense_calibration_validation.launch"/> -->
+    
+    <!-- launch azure aruco marker detection -->
+    <!-- <include file="$(find arobot)/launch/azure_calibration_validation.launch"/> -->
+
+
+</launch>
